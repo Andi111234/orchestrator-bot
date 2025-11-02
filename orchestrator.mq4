@@ -1,5 +1,6 @@
 
         #include "sovetnikov.mqh" 
+        #include "steps_unified.mqh"
 //-----------------------проверяем ботов активен или нет--------------------------------------- 
         #define BOT_NAME "Bot_1"  // Уникальное имя этого советника 
         #define TOTAL_BOTS 12          // Всего ботов
@@ -38,6 +39,7 @@
         input bool master              =true;        // Первый вход осуществляет master, если master=false, то включен slave      
         input bool standart            =false;       // Выбор типа счета-стандарт, цент, если standart=false, то включен cent
         input bool delta_dinamic       =true;        // Включение выключени динамическтй дельты
+        input int  open_order_cooldown =5;           // Кулдаун открытия ордеров (секунды)
 //-----------------------назвачение валютных пар для советника--------------------------------        
         bool EURUSD_GBPUSD             =true;//=true        // true включаем кореллирующие пары, false отключаем
         bool AUDCAD_AUDUSD             =false;     
@@ -129,6 +131,7 @@
         double r0=0,r1=0,p0=0,p1=0,r2=0,p2=0,r3=0,p3=0,r4=0,p4=0;
         datetime lastSwitchTime = 0;
         int activePoint = 1;
+        datetime g_last_order_time = 0;  // Для кулдауна открытия ордеров
         double flag_4=0;
         double flag_5=0;
         double flag_6=0;
@@ -243,6 +246,18 @@
         else return(false);}        
 //-----------------------блок реализации одной сделки на одном баре----------------------------
 
+//-----------------------проверка кулдауна открытия ордеров------------------------------------
+        bool CanOpenOrder(){
+        if(TimeCurrent() - g_last_order_time < open_order_cooldown){
+        return false; // Кулдаун еще не истек
+        }
+        return true;
+        }
+        void UpdateOrderTime(){
+        g_last_order_time = TimeCurrent();
+        }
+//-----------------------проверка кулдауна открытия ордеров------------------------------------
+
 /////////////////////////////////////////////////////////////////////////////////////////////// 
         double par5=1;
         ENUM_TF  tf=0;                      // 0-текущий тф с графика, либо стандартный тф в минутах
@@ -292,7 +307,18 @@
 //----------------------настройки графика по умолчанию-----------------------------------------
      
         main.init(Symbol(),order_magic,slippage);
-        return(INIT_SUCCEEDED);}      
+        EventSetTimer(1); // Установить таймер на 1 секунду
+        return(INIT_SUCCEEDED);}
+//-----------------------Expert timer function-------------------------------------------------
+        void OnTimer(){
+        // Вызываем Steps_OnTimer с текущими счетчиками ордеров
+        Steps_OnTimer(CountBuy_1(), CountSell_1());
+        // Обновляем локальные переменные из кеша unified модуля
+        next_step_buy = g_next_step_buy;
+        next_step_sell = g_next_step_sell;
+        next_step_buy_11 = g_next_step_buy_px;
+        next_step_sell_11 = g_next_step_sell_px;
+        }
 //-----------------------прибыль сегодня вчера месяц-------------------------------------------
         datetime DateBeginQuarter(double nq=0){
         double ye=Year()-MathFloor(nq/4);nq=MathMod(nq,4);
@@ -1000,79 +1026,8 @@
 //-----------------------удаляем объекты, очищаем переменные-----------------------------------
 
 //-----------------------расчитываем step ы----------------------------------------------------       
-       if(CountBuy_1()>=1&&CountBuy_1()<5){ 
-       if(FileIsExist(filename1,0)>=1){next_step_buy=6;next_step_buy_11=0.0006;}
-       if(FileIsExist(filename2,0)>=1){next_step_buy=5;next_step_buy_11=0.0005;}
-       if(FileIsExist(filename3,0)>=1){next_step_buy=4;next_step_buy_11=0.0004;}
-       if(FileIsExist(filename4,0)>=1){next_step_buy=3;next_step_buy_11=0.0003;}
-       if(FileIsExist(filename5,0)>=1){next_step_buy=2;next_step_buy_11=0.0002;}}
-       if(CountBuy_1()>=5&&CountBuy_1()<10){ 
-       if(FileIsExist(filename1,0)>=1){next_step_buy=8;next_step_buy_11=0.0008;}
-       if(FileIsExist(filename2,0)>=1){next_step_buy=7;next_step_buy_11=0.0007;}
-       if(FileIsExist(filename3,0)>=1){next_step_buy=6;next_step_buy_11=0.0006;}
-       if(FileIsExist(filename4,0)>=1){next_step_buy=5;next_step_buy_11=0.0005;}
-       if(FileIsExist(filename5,0)>=1){next_step_buy=4;next_step_buy_11=0.0004;}}
-       if(CountBuy_1()>=10&&CountBuy_1()<15){ 
-       if(FileIsExist(filename1,0)>=1){next_step_buy=16;next_step_buy_11=0.0016;}
-       if(FileIsExist(filename2,0)>=1){next_step_buy=14;next_step_buy_11=0.0014;}
-       if(FileIsExist(filename3,0)>=1){next_step_buy=12;next_step_buy_11=0.0012;}
-       if(FileIsExist(filename4,0)>=1){next_step_buy=10;next_step_buy_11=0.0010;}
-       if(FileIsExist(filename5,0)>=1){next_step_buy=8;next_step_buy_11=0.0008;}}
-       if(CountBuy_1()>=15&&CountBuy_1()<20){ 
-       if(FileIsExist(filename1,0)>=1){next_step_buy=30;next_step_buy_11=0.0030;}
-       if(FileIsExist(filename2,0)>=1){next_step_buy=28;next_step_buy_11=0.0028;}
-       if(FileIsExist(filename3,0)>=1){next_step_buy=26;next_step_buy_11=0.0026;}
-       if(FileIsExist(filename4,0)>=1){next_step_buy=24;next_step_buy_11=0.0024;}
-       if(FileIsExist(filename5,0)>=1){next_step_buy=22;next_step_buy_11=0.0022;}}
-       if(CountBuy_1()>=20&&CountBuy_1()<40){ 
-       if(FileIsExist(filename1,0)>=1){next_step_buy=40;next_step_buy_11=0.0040;}
-       if(FileIsExist(filename2,0)>=1){next_step_buy=38;next_step_buy_11=0.0038;}
-       if(FileIsExist(filename3,0)>=1){next_step_buy=36;next_step_buy_11=0.0036;}
-       if(FileIsExist(filename4,0)>=1){next_step_buy=34;next_step_buy_11=0.0034;}
-       if(FileIsExist(filename5,0)>=1){next_step_buy=32;next_step_buy_11=0.0032;}}
-       if(CountBuy_1()>=40){ 
-       if(FileIsExist(filename1,0)>=1){next_step_buy=60;next_step_buy_11=0.0060;}
-       if(FileIsExist(filename2,0)>=1){next_step_buy=58;next_step_buy_11=0.0058;}
-       if(FileIsExist(filename3,0)>=1){next_step_buy=56;next_step_buy_11=0.0056;}
-       if(FileIsExist(filename4,0)>=1){next_step_buy=54;next_step_buy_11=0.0054;}
-       if(FileIsExist(filename5,0)>=1){next_step_buy=52;next_step_buy_11=0.0052;}}
-    
-       if(CountSell_1()>=1&&CountSell_1()<5){ 
-       if(FileIsExist(filename1,0)>=1){next_step_sell=6;next_step_sell_11=0.0006;}
-       if(FileIsExist(filename2,0)>=1){next_step_sell=5;next_step_sell_11=0.0005;}
-       if(FileIsExist(filename3,0)>=1){next_step_sell=4;next_step_sell_11=0.0004;}
-       if(FileIsExist(filename4,0)>=1){next_step_sell=3;next_step_sell_11=0.0003;}
-       if(FileIsExist(filename5,0)>=1){next_step_sell=2;next_step_sell_11=0.0002;}}
-       if(CountSell_1()>=5&&CountSell_1()<10){ 
-       if(FileIsExist(filename1,0)>=1){next_step_sell=8;next_step_sell_11=0.0008;}
-       if(FileIsExist(filename2,0)>=1){next_step_sell=7;next_step_sell_11=0.0007;}
-       if(FileIsExist(filename3,0)>=1){next_step_sell=6;next_step_sell_11=0.0006;}
-       if(FileIsExist(filename4,0)>=1){next_step_sell=5;next_step_sell_11=0.0005;}
-       if(FileIsExist(filename5,0)>=1){next_step_sell=4;next_step_sell_11=0.0004;}}
-       if(CountSell_1()>=10&&CountSell_1()<15){ 
-       if(FileIsExist(filename1,0)>=1){next_step_sell=16;next_step_sell_11=0.0016;}
-       if(FileIsExist(filename2,0)>=1){next_step_sell=14;next_step_sell_11=0.0014;}
-       if(FileIsExist(filename3,0)>=1){next_step_sell=12;next_step_sell_11=0.0012;}
-       if(FileIsExist(filename4,0)>=1){next_step_sell=10;next_step_sell_11=0.0010;}
-       if(FileIsExist(filename5,0)>=1){next_step_sell=08;next_step_sell_11=0.0008;}}
-       if(CountSell_1()>=15&&CountSell_1()<20){ 
-       if(FileIsExist(filename1,0)>=1){next_step_sell=30;next_step_sell_11=0.0030;}
-       if(FileIsExist(filename2,0)>=1){next_step_sell=28;next_step_sell_11=0.0028;}
-       if(FileIsExist(filename3,0)>=1){next_step_sell=26;next_step_sell_11=0.0026;}
-       if(FileIsExist(filename4,0)>=1){next_step_sell=24;next_step_sell_11=0.0024;}
-       if(FileIsExist(filename5,0)>=1){next_step_sell=22;next_step_sell_11=0.0022;}}
-       if(CountSell_1()>=20&&CountSell_1()<40){ 
-       if(FileIsExist(filename1,0)>=1){next_step_sell=40;next_step_sell_11=0.0040;}
-       if(FileIsExist(filename2,0)>=1){next_step_sell=38;next_step_sell_11=0.0038;}
-       if(FileIsExist(filename3,0)>=1){next_step_sell=36;next_step_sell_11=0.0036;}
-       if(FileIsExist(filename4,0)>=1){next_step_sell=34;next_step_sell_11=0.0034;}
-       if(FileIsExist(filename5,0)>=1){next_step_sell=32;next_step_sell_11=0.0032;}}
-       if(CountSell_1()>=40){ 
-       if(FileIsExist(filename1,0)>=1){next_step_sell=60;next_step_sell_11=0.0060;}
-       if(FileIsExist(filename2,0)>=1){next_step_sell=58;next_step_sell_11=0.0058;}
-       if(FileIsExist(filename3,0)>=1){next_step_sell=56;next_step_sell_11=0.0056;}
-       if(FileIsExist(filename4,0)>=1){next_step_sell=54;next_step_sell_11=0.0054;}
-       if(FileIsExist(filename5,0)>=1){next_step_sell=52;next_step_sell_11=0.0052;}}       
+       // Step calculation moved to steps_unified.mqh and called via OnTimer
+       // Steps are now computed by Steps_OnTimer() and cached in g_next_step_buy/sell
 //-----------------------расчитываем step ы----------------------------------------------------
       
 //-----------------------считаем среднюю дельту за n дней/месяцев------------------------------
@@ -4420,6 +4375,12 @@ if(tral_equity_dinamic) {
 //-----------------------Конец закрываем по профиту--------------------------------------------
    
 //-----------------------открытие позиций------------------------------------------------------ 
+//-----------------------проверка кулдауна открытия ордеров------------------------------------
+        if(!CanOpenOrder() && op != 0){
+        // Кулдаун не истек, пропускаем открытие новых ордеров
+        op = 0; // Сбрасываем сигнал на открытие
+        }
+//-----------------------проверка кулдауна открытия ордеров------------------------------------
 //-----------------------следующие входы buy---------------------------------------------------
         if(op==1){int t_b=main.getLastOrderTicket(OP_BUY,ORDER_LAST);
         if(main.OrderSelect(t_b)){           
@@ -4528,6 +4489,11 @@ if(tral_equity_dinamic) {
         if(telegram==true){SendTelegramMessage(BuildEquityMessage_sell());} }}}
 //-----------------------конец следующий вход sell---------------------------------------------
 //-----------------------конец открытие позиций------------------------------------------------
+//-----------------------обновляем время последнего ордера-------------------------------------
+        if(op != 0 && OrdersTotal() > pre_OrdersTotal){
+        UpdateOrderTime(); // Обновляем время если был открыт новый ордер
+        }
+//-----------------------обновляем время последнего ордера-------------------------------------
 
 //-----------------------ФУНКЦИЯ ЗАКРЫТИЯ ПОЛОЖИТЕЛЬНЫХ ОРДЕРОВ-------------------------------
         if(op==999){int ticket=0;RefreshRates();
