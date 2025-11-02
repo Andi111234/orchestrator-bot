@@ -1,5 +1,6 @@
 
-        #include "sovetnikov.mqh" 
+        #include "sovetnikov.mqh"
+        #include "graphics_common.mqh" 
 //-----------------------проверяем ботов активен или нет--------------------------------------- 
         #define BOT_NAME "Bot_1"  // Уникальное имя этого советника 
         #define TOTAL_BOTS 12          // Всего ботов
@@ -442,12 +443,11 @@
         double angleWork1=0;double angleWork2=0;double angleWork3=0;double angleWork4=0;
         void CreateWorkLabel(int index,double angle,int x,int y,int textSize,color textColor){
         string work_="work_"+IntegerToString(index);
-        if(ObjectFind(0,work_)==-1){ObjectCreate(work_,OBJ_LABEL,0,0,0);ObjectSetInteger(0,work_,OBJPROP_BACK,false);ObjectSetString(0,work_,OBJPROP_TOOLTIP,"\n");ObjectSet(work_,OBJPROP_CORNER,CORNER);ObjectSetInteger(0,work_,OBJPROP_ANCHOR,ANCHOR_CENTER);}
-        
-        ObjectSet(work_,OBJPROP_XDISTANCE,x);
-        ObjectSet(work_,OBJPROP_YDISTANCE,y);
-        ObjectSetText(work_,CharToStr(118),textSize,"Wingdings",textColor);
-        ObjectSet(work_,OBJPROP_ANGLE,angle);}
+        EnsureLabel(work_, CORNER, x, y, textSize, "Wingdings", textColor, CharToStr(118), false);
+        if(ObjectFind(0,work_)!=-1){
+        ObjectSetInteger(0,work_,OBJPROP_ANCHOR,ANCHOR_CENTER);
+        ObjectSetString(0,work_,OBJPROP_TOOLTIP,"\n");}
+        SetAngleIfChanged(work_, angle);}
 
         void UpdateRotation(){
         //Обновляем углы для плавного вращения//Плавное увеличение угла(можно изменитьскорость)
@@ -458,7 +458,7 @@
         if(angleWork3>=360)angleWork3=0;
         if(angleWork4>=360)angleWork4=0;
         //Применяем новый угол
-        ObjectSet("work_1",OBJPROP_ANGLE,angleWork1);ObjectSet("work_2",OBJPROP_ANGLE,angleWork2);ObjectSet("work_3",OBJPROP_ANGLE,angleWork3);ObjectSet("work_4",OBJPROP_ANGLE,angleWork4);}
+        SetAngleIfChanged("work_1",angleWork1);SetAngleIfChanged("work_2",angleWork2);SetAngleIfChanged("work_3",angleWork3);SetAngleIfChanged("work_4",angleWork4);}
 //--------------------вывод шестеренок на график---------------------------------------------
 
 //-----------------------отправка сообщений в телеграмм-----------------------------------------
@@ -726,44 +726,16 @@
         step_buy_11=bestMaxPrice()+next_step_buy_11;
         if(MathAbs(step_buy_11-last_step_buy_11)>Point){
         last_step_buy_11=step_buy_11;
-        if(ObjectFind(0,"step_buy_11")==-1)
-        ObjectCreate(0,"step_buy_11",OBJ_HLINE,0,0,step_buy_11);
-        else ObjectSetDouble(0,"step_buy_11",OBJPROP_PRICE,step_buy_11);
-
-        ObjectSetString(0,"step_buy_11",OBJPROP_TOOLTIP,"\n");
-        ObjectSetInteger(0,"step_buy_11",OBJPROP_COLOR,col_1);
-        ObjectSetInteger(0,"step_buy_11",OBJPROP_WIDTH,1);
-        ObjectSetInteger(0,"step_buy_11",OBJPROP_STYLE,2);
-        ObjectSetInteger(0,"step_buy_11",OBJPROP_BACK,true);
-
-        if(ObjectFind(0,"MaxPrice")==-1)
-        ObjectCreate(0,"MaxPrice",OBJ_TEXT,0,TimeCurrent(),step_buy_11);
-        ObjectSetDouble(0,"MaxPrice",OBJPROP_PRICE,step_buy_11);
-        ObjectSetInteger(0,"MaxPrice",OBJPROP_TIME,TimeCurrent());
-        ObjectSetInteger(0,"MaxPrice",OBJPROP_BACK,true);
-        ObjectSetText("MaxPrice",DoubleToStr(NormalizeDouble(step_buy_11,5),5),10,TextFONT,col_1);}}
+        EnsureHLine("step_buy_11", step_buy_11, col_1, 1, 2, true);
+        EnsureText("MaxPrice", TimeCurrent(), step_buy_11, DoubleToStr(NormalizeDouble(step_buy_11,5),5), TextFONT, 10, col_1, true);}}
 
         //===SELL===
         if(CountSell()>=1){
         step_sell_11=bestMinPrice()-next_step_sell_11;
         if(MathAbs(step_sell_11-last_step_sell_11)>Point){
         last_step_sell_11=step_sell_11;
-        if(ObjectFind(0,"step_sell_11")==-1)
-        ObjectCreate(0,"step_sell_11",OBJ_HLINE,0,0,step_sell_11);
-        else ObjectSetDouble(0,"step_sell_11",OBJPROP_PRICE,step_sell_11);
-
-        ObjectSetString(0,"step_sell_11",OBJPROP_TOOLTIP,"\n");
-        ObjectSetInteger(0,"step_sell_11",OBJPROP_COLOR,col_1);
-        ObjectSetInteger(0,"step_sell_11",OBJPROP_WIDTH,1);
-        ObjectSetInteger(0,"step_sell_11",OBJPROP_STYLE,2);
-        ObjectSetInteger(0,"step_sell_11",OBJPROP_BACK,true);
-
-        if(ObjectFind(0,"MinPrice")==-1)
-        ObjectCreate(0,"MinPrice",OBJ_TEXT,0,TimeCurrent(),step_sell_11);
-        ObjectSetDouble(0,"MinPrice",OBJPROP_PRICE,step_sell_11);
-        ObjectSetInteger(0,"MinPrice",OBJPROP_TIME,TimeCurrent());
-        ObjectSetInteger(0,"MinPrice",OBJPROP_BACK,true);
-        ObjectSetText("MinPrice",DoubleToStr(NormalizeDouble(step_sell_11,5),5),10,TextFONT,col_1);}}
+        EnsureHLine("step_sell_11", step_sell_11, col_1, 1, 2, true);
+        EnsureText("MinPrice", TimeCurrent(), step_sell_11, DoubleToStr(NormalizeDouble(step_sell_11,5),5), TextFONT, 10, col_1, true);}}
 //-----------------------расчитываем step11----------------------------------------------------
 
 //-----------------------получаем время открытия последнего ордера-----------------------------
