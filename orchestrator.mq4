@@ -1099,11 +1099,11 @@
        if (i_D1 == 5) delta_USDCHF_CADCHF_d = avgDiffs_D1[i_D1];}
        // Зеркалируем данные D1 в буферы MN1 если флаг включен
        if(UseMN1FromD1){
-       for(int i=0;i<PAIRS_COUNT;i++){
-       avgDiffs_MN1[i]=avgDiffs_D1[i];
+       for(int pairIndex=0;pairIndex<PAIRS_COUNT;pairIndex++){
+       avgDiffs_MN1[pairIndex]=avgDiffs_D1[pairIndex];
        }}
        // Анализируем валютные пары для месяцев (MN1)
-       if(!UseMN1FromD1){
+       else{
        for(int i_MN1 = 0; i_MN1 < PAIRS_COUNT; i_MN1++) {
        string symbol1 = pairs_MN1[i_MN1][0];
        string symbol2 = pairs_MN1[i_MN1][1];
