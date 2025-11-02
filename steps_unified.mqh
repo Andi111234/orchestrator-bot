@@ -67,11 +67,11 @@ void LoadPrFlags(const string file1, const string file2, const string file3, con
   // reset
   for(int i=1;i<=5;i++) g_pr[i]=false;
   // read from files
-  if(FileIsExist(file1,0)>=1) g_pr[1]=true;
-  if(FileIsExist(file2,0)>=1) g_pr[2]=true;
-  if(FileIsExist(file3,0)>=1) g_pr[3]=true;
-  if(FileIsExist(file4,0)>=1) g_pr[4]=true;
-  if(FileIsExist(file5,0)>=1) g_pr[5]=true;
+  if(FileIsExist(file1,0)>0) g_pr[1]=true;
+  if(FileIsExist(file2,0)>0) g_pr[2]=true;
+  if(FileIsExist(file3,0)>0) g_pr[3]=true;
+  if(FileIsExist(file4,0)>0) g_pr[4]=true;
+  if(FileIsExist(file5,0)>0) g_pr[5]=true;
 }
 
 void RefreshStepsIfNeeded(const int countBuyAll, const int countSellAll, const string sym,

@@ -1025,13 +1025,15 @@
        // Use D1(20) by default or MN1 if configured
        if(UseD1Analytics){
          // Use D1 analytics with configurable period instead of MN1
-         double totalDiff_D1Alt=0;int count_D1Alt=0;
+         double totalDiff_D1Alt=0;
+         int count_D1Alt=0;
          for(int j=1;j<=D1AnalyticsPeriod;j++){
            double change1=CalculatePercentageChange_D1(symbol1,j);
            double change2=CalculatePercentageChange_D1(symbol2,j);
            if(change1==0||change2==0)continue;
            double diff=MathAbs(change1-change2);
-           totalDiff_D1Alt+=diff;count_D1Alt++;
+           totalDiff_D1Alt+=diff;
+           count_D1Alt++;
          }
          if(count_D1Alt>0) avgDiffs_MN1[i_MN1]=totalDiff_D1Alt/count_D1Alt;
        }else{
@@ -4414,35 +4416,40 @@ if(tral_equity_dinamic) {
         if(op==11){int t_b=main.getLastOrderTicket(OP_BUY,ORDER_LAST);
         if(main.OrderSelect(t_b)){
         if(Ask>step_buy_11 && (TimeCurrent()-g_lastStepEntryBuy)>=StepReentryCooldownSec){
-        lot=getLot((main.orders[OP_BUY]));main.OrderSend(OP_BUY,lot*st1*par5,-1,0,0,(string)order_magic);
+        lot=getLot((main.orders[OP_BUY]));
+        main.OrderSend(OP_BUY,lot*st1*par5,-1,0,0,(string)order_magic);
         g_lastStepEntryBuy=TimeCurrent();
         if(telegram==true){SendTelegramMessage(BuildEquityMessage_buy());} }}}
 //---------------------------------------------------------------------------------------------   
         if(op==22){int t_b=main.getLastOrderTicket(OP_BUY,ORDER_LAST);
         if(main.OrderSelect(t_b)){ 
         if(Ask>step_buy_11 && (TimeCurrent()-g_lastStepEntryBuy)>=StepReentryCooldownSec){
-        lot=getLot((main.orders[OP_BUY]));main.OrderSend(OP_BUY,lot*st2*par5,-1,0,0,(string)order_magic);
+        lot=getLot((main.orders[OP_BUY]));
+        main.OrderSend(OP_BUY,lot*st2*par5,-1,0,0,(string)order_magic);
         g_lastStepEntryBuy=TimeCurrent();
         if(telegram==true){SendTelegramMessage(BuildEquityMessage_buy());} }}}
 //---------------------------------------------------------------------------------------------   
         if(op==33){int t_b=main.getLastOrderTicket(OP_BUY,ORDER_LAST);
         if(main.OrderSelect(t_b)){ 
         if(Ask>step_buy_11 && (TimeCurrent()-g_lastStepEntryBuy)>=StepReentryCooldownSec){
-        lot=getLot((main.orders[OP_BUY]));main.OrderSend(OP_BUY,lot*st3*par5,-1,0,0,(string)order_magic);
+        lot=getLot((main.orders[OP_BUY]));
+        main.OrderSend(OP_BUY,lot*st3*par5,-1,0,0,(string)order_magic);
         g_lastStepEntryBuy=TimeCurrent();
         if(telegram==true){SendTelegramMessage(BuildEquityMessage_buy());} }}}
 //---------------------------------------------------------------------------------------------   
         if(op==44){int t_b=main.getLastOrderTicket(OP_BUY,ORDER_LAST);
         if(main.OrderSelect(t_b)){
         if(Ask>step_buy_11 && (TimeCurrent()-g_lastStepEntryBuy)>=StepReentryCooldownSec){
-        lot=getLot((main.orders[OP_BUY]));main.OrderSend(OP_BUY,lot*st4*par5,-1,0,0,(string)order_magic);
+        lot=getLot((main.orders[OP_BUY]));
+        main.OrderSend(OP_BUY,lot*st4*par5,-1,0,0,(string)order_magic);
         g_lastStepEntryBuy=TimeCurrent();
         if(telegram==true){SendTelegramMessage(BuildEquityMessage_buy());} }}}
 //---------------------------------------------------------------------------------------------   
         if(op==55){int t_b=main.getLastOrderTicket(OP_BUY,ORDER_LAST);
         if(main.OrderSelect(t_b)){
         if(Ask>step_buy_11 && (TimeCurrent()-g_lastStepEntryBuy)>=StepReentryCooldownSec){
-        lot=getLot((main.orders[OP_BUY]));main.OrderSend(OP_BUY,lot*st5*par5,-1,0,0,(string)order_magic);
+        lot=getLot((main.orders[OP_BUY]));
+        main.OrderSend(OP_BUY,lot*st5*par5,-1,0,0,(string)order_magic);
         g_lastStepEntryBuy=TimeCurrent();
         if(telegram==true){SendTelegramMessage(BuildEquityMessage_buy());} }}}
 //-----------------------конец слудующий вход buy----------------------------------------------
@@ -4451,35 +4458,40 @@ if(tral_equity_dinamic) {
         if(op==-11){int t_s=main.getLastOrderTicket(OP_SELL,ORDER_LAST);
         if(main.OrderSelect(t_s)){
         if(Bid<step_sell_11 && (TimeCurrent()-g_lastStepEntrySell)>=StepReentryCooldownSec){
-        lot=getLot((main.orders[OP_SELL]));main.OrderSend(OP_SELL,lot*st1*par5,-1,0,0,(string)order_magic);
+        lot=getLot((main.orders[OP_SELL]));
+        main.OrderSend(OP_SELL,lot*st1*par5,-1,0,0,(string)order_magic);
         g_lastStepEntrySell=TimeCurrent();
         if(telegram==true){SendTelegramMessage(BuildEquityMessage_sell());} }}}
 //---------------------------------------------------------------------------------------------         
         if(op==-22){int t_s=main.getLastOrderTicket(OP_SELL,ORDER_LAST);
         if(main.OrderSelect(t_s)){
         if(Bid<step_sell_11 && (TimeCurrent()-g_lastStepEntrySell)>=StepReentryCooldownSec){
-        lot=getLot((main.orders[OP_SELL])); main.OrderSend(OP_SELL,lot*st2*par5,-1,0,0,(string)order_magic);
+        lot=getLot((main.orders[OP_SELL]));
+        main.OrderSend(OP_SELL,lot*st2*par5,-1,0,0,(string)order_magic);
         g_lastStepEntrySell=TimeCurrent();
         if(telegram==true){SendTelegramMessage(BuildEquityMessage_sell());} }}}
 //---------------------------------------------------------------------------------------------          
         if(op==-33){int t_s=main.getLastOrderTicket(OP_SELL,ORDER_LAST);
         if(main.OrderSelect(t_s)){
         if(Bid<step_sell_11 && (TimeCurrent()-g_lastStepEntrySell)>=StepReentryCooldownSec){
-        lot=getLot((main.orders[OP_SELL]));main.OrderSend(OP_SELL,lot*st3*par5,-1,0,0,(string)order_magic);
+        lot=getLot((main.orders[OP_SELL]));
+        main.OrderSend(OP_SELL,lot*st3*par5,-1,0,0,(string)order_magic);
         g_lastStepEntrySell=TimeCurrent();
         if(telegram==true){SendTelegramMessage(BuildEquityMessage_sell());} }}}
 //---------------------------------------------------------------------------------------------          
         if(op==-44){int t_s=main.getLastOrderTicket(OP_SELL,ORDER_LAST);
         if(main.OrderSelect(t_s)){
         if(Bid<step_sell_11 && (TimeCurrent()-g_lastStepEntrySell)>=StepReentryCooldownSec){
-        lot=getLot((main.orders[OP_SELL]));main.OrderSend(OP_SELL,lot*st4*par5,-1,0,0,(string)order_magic);
+        lot=getLot((main.orders[OP_SELL]));
+        main.OrderSend(OP_SELL,lot*st4*par5,-1,0,0,(string)order_magic);
         g_lastStepEntrySell=TimeCurrent();
         if(telegram==true){SendTelegramMessage(BuildEquityMessage_sell());} }}}
 //---------------------------------------------------------------------------------------------          
         if(op==-55){int t_s=main.getLastOrderTicket(OP_SELL,ORDER_LAST);
         if(main.OrderSelect(t_s)){
         if(Bid<step_sell_11 && (TimeCurrent()-g_lastStepEntrySell)>=StepReentryCooldownSec){
-        lot=getLot((main.orders[OP_SELL]));main.OrderSend(OP_SELL,lot*st5*par5,-1,0,0,(string)order_magic);
+        lot=getLot((main.orders[OP_SELL]));
+        main.OrderSend(OP_SELL,lot*st5*par5,-1,0,0,(string)order_magic);
         g_lastStepEntrySell=TimeCurrent();
         if(telegram==true){SendTelegramMessage(BuildEquityMessage_sell());} }}}
 //-----------------------конец следующий вход sell---------------------------------------------
