@@ -580,7 +580,8 @@
 //-----------------------считаем среднюю дельту за n дней/месяцев------------------------------
         //#property strict
         //#property show_inputs
-        extern int DaysToAnalyze_D1=60;//Кол-во дней
+        extern int DaysToAnalyze_D1=20;//Кол-во дней
+        input bool UseMN1FromD1=true;//Использовать данные D1 для MN1
         #define PAIRS_COUNT 6//Кол-во валютных пар
         extern int DaysToAnalyze_MN1=3;//Кол-во дней
  
@@ -1096,7 +1097,13 @@
        if (i_D1 == 3) delta_AUDCHF_GBPCHF_d = avgDiffs_D1[i_D1];
        if (i_D1 == 4) delta_NZDUSD_NZDCAD_d = avgDiffs_D1[i_D1];
        if (i_D1 == 5) delta_USDCHF_CADCHF_d = avgDiffs_D1[i_D1];}
+       // Зеркалируем данные D1 в буферы MN1 если флаг включен
+       if(UseMN1FromD1){
+       for(int i=0;i<PAIRS_COUNT;i++){
+       avgDiffs_MN1[i]=avgDiffs_D1[i];
+       }}
        // Анализируем валютные пары для месяцев (MN1)
+       if(!UseMN1FromD1){
        for(int i_MN1 = 0; i_MN1 < PAIRS_COUNT; i_MN1++) {
        string symbol1 = pairs_MN1[i_MN1][0];
        string symbol2 = pairs_MN1[i_MN1][1];
@@ -1105,8 +1112,10 @@
        // Если в процессе анализа получается ноль, подставляем значение из другого буфера
        if(avgDiffs_MN1[i_MN1] == 0) {
        avgDiffs_MN1[i_MN1] = GetSafeValue(avgDiffs_MN1[i_MN1],2); // Пример подстановки значения
+       }}
        }
        // Записываем в соответствующие буферы для месяцев
+       for(int i_MN1 = 0; i_MN1 < PAIRS_COUNT; i_MN1++) {
        if (i_MN1 == 0) delta_EURUSD_GBPUSD_MN1_strong = avgDiffs_MN1[i_MN1];
        if (i_MN1 == 1) delta_AUDCAD_AUDUSD_MN1_strong = avgDiffs_MN1[i_MN1];
        if (i_MN1 == 2) delta_EURAUD_GBPAUD_MN1_strong = avgDiffs_MN1[i_MN1];
