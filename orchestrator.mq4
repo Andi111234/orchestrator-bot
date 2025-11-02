@@ -138,15 +138,20 @@
 //-----------------------cooldown storage------------------------------------------------------
         datetime g_lastOpenBuy[6], g_lastOpenSell[6];
         
+        // Maps op code to tier 1..5
+        // op=1/-1/11/-11 → tier 1, op=2/-2/22/-22 → tier 2, etc.
         int OpToTier(int op){
           int a=MathAbs(op);
           return (a>=10 ? a/11 : a);
         }
         
+        // Checks and updates cooldown timestamp
+        // Returns true if cooldown period has passed, false otherwise
         bool CooldownOk(bool isBuy, int tier){
           if(OpenCooldownSec<=0) return true;
           datetime last = isBuy ? g_lastOpenBuy[tier] : g_lastOpenSell[tier];
           if(TimeCurrent() - last < OpenCooldownSec) return false;
+          // Update timestamp when cooldown passed
           if(isBuy) g_lastOpenBuy[tier] = TimeCurrent();
           else g_lastOpenSell[tier] = TimeCurrent();
           return true;

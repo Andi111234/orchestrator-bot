@@ -15,6 +15,7 @@ double g_next_step_buy_px = 0, g_next_step_sell_px = 0;
 inline double PipValueLocal(const string sym){
   int digits = (int)MarketInfo(sym, MODE_DIGITS);
   int mult = 1;
+  // For 3/5 digit quotes or PROFIT_CALCMODE_FOREX (value 1), use 10x multiplier
   if(digits==3 || digits==5 || MarketInfo(sym,MODE_PROFITCALCMODE)==1) mult=10;
   return mult*MarketInfo(sym, MODE_POINT);
 }
