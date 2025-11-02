@@ -1,5 +1,7 @@
 
-        #include "sovetnikov.mqh" 
+        #include "sovetnikov.mqh"
+        #include "steps_unified.mqh"
+        #include "graphics_helpers.mqh" 
 //-----------------------проверяем ботов активен или нет--------------------------------------- 
         #define BOT_NAME "Bot_1"  // Уникальное имя этого советника 
         #define TOTAL_BOTS 12          // Всего ботов
@@ -38,6 +40,9 @@
         input bool master              =true;        // Первый вход осуществляет master, если master=false, то включен slave      
         input bool standart            =false;       // Выбор типа счета-стандарт, цент, если standart=false, то включен cent
         input bool delta_dinamic       =true;        // Включение выключени динамическтй дельты
+        input int  StepReentryCooldownSec = 60;      // Cooldown for step-based re-entries (seconds)
+        input bool UseD1Analytics      =true;        // Use D1(20) analytics instead of MN1
+        input int  D1AnalyticsPeriod   =20;          // D1 analytics period (bars)
 //-----------------------назвачение валютных пар для советника--------------------------------        
         bool EURUSD_GBPUSD             =true;//=true        // true включаем кореллирующие пары, false отключаем
         bool AUDCAD_AUDUSD             =false;     
@@ -132,6 +137,8 @@
         double flag_4=0;
         double flag_5=0;
         double flag_6=0;
+        datetime g_lastStepEntryBuy = 0;  // Cooldown tracking for buy step entries
+        datetime g_lastStepEntrySell = 0; // Cooldown tracking for sell step entries
 
 //-----------------------cчитаем закрытый объем------------------------------------------------
         double totalVolume = 0;      // Общий закрытый объём за день
@@ -292,7 +299,17 @@
 //----------------------настройки графика по умолчанию-----------------------------------------
      
         main.init(Symbol(),order_magic,slippage);
-        return(INIT_SUCCEEDED);}      
+        EventSetTimer(5); // Set timer to refresh steps every 5 seconds
+        return(INIT_SUCCEEDED);}
+//-----------------------Expert deinitialization function--------------------------------------
+        void OnDeinit(const int reason){
+        EventKillTimer();
+        }
+//-----------------------OnTimer function to refresh steps cache-------------------------------
+        void OnTimer(){
+        // Refresh steps cache periodically to reduce OnTick workload
+        RefreshStepsIfNeeded(CountBuy_1(), CountSell_1(), Symbol(), filename_pr1, filename_pr2, filename_pr3, filename_pr4, filename_pr5);
+        }      
 //-----------------------прибыль сегодня вчера месяц-------------------------------------------
         datetime DateBeginQuarter(double nq=0){
         double ye=Year()-MathFloor(nq/4);nq=MathMod(nq,4);
@@ -726,44 +743,16 @@
         step_buy_11=bestMaxPrice()+next_step_buy_11;
         if(MathAbs(step_buy_11-last_step_buy_11)>Point){
         last_step_buy_11=step_buy_11;
-        if(ObjectFind(0,"step_buy_11")==-1)
-        ObjectCreate(0,"step_buy_11",OBJ_HLINE,0,0,step_buy_11);
-        else ObjectSetDouble(0,"step_buy_11",OBJPROP_PRICE,step_buy_11);
-
-        ObjectSetString(0,"step_buy_11",OBJPROP_TOOLTIP,"\n");
-        ObjectSetInteger(0,"step_buy_11",OBJPROP_COLOR,col_1);
-        ObjectSetInteger(0,"step_buy_11",OBJPROP_WIDTH,1);
-        ObjectSetInteger(0,"step_buy_11",OBJPROP_STYLE,2);
-        ObjectSetInteger(0,"step_buy_11",OBJPROP_BACK,true);
-
-        if(ObjectFind(0,"MaxPrice")==-1)
-        ObjectCreate(0,"MaxPrice",OBJ_TEXT,0,TimeCurrent(),step_buy_11);
-        ObjectSetDouble(0,"MaxPrice",OBJPROP_PRICE,step_buy_11);
-        ObjectSetInteger(0,"MaxPrice",OBJPROP_TIME,TimeCurrent());
-        ObjectSetInteger(0,"MaxPrice",OBJPROP_BACK,true);
-        ObjectSetText("MaxPrice",DoubleToStr(NormalizeDouble(step_buy_11,5),5),10,TextFONT,col_1);}}
+        EnsureHLine("step_buy_11",step_buy_11,col_1,1,2,true);
+        EnsureText("MaxPrice",TimeCurrent(),step_buy_11,DoubleToStr(NormalizeDouble(step_buy_11,5),5),10,TextFONT,col_1,true);}}
 
         //===SELL===
         if(CountSell()>=1){
         step_sell_11=bestMinPrice()-next_step_sell_11;
         if(MathAbs(step_sell_11-last_step_sell_11)>Point){
         last_step_sell_11=step_sell_11;
-        if(ObjectFind(0,"step_sell_11")==-1)
-        ObjectCreate(0,"step_sell_11",OBJ_HLINE,0,0,step_sell_11);
-        else ObjectSetDouble(0,"step_sell_11",OBJPROP_PRICE,step_sell_11);
-
-        ObjectSetString(0,"step_sell_11",OBJPROP_TOOLTIP,"\n");
-        ObjectSetInteger(0,"step_sell_11",OBJPROP_COLOR,col_1);
-        ObjectSetInteger(0,"step_sell_11",OBJPROP_WIDTH,1);
-        ObjectSetInteger(0,"step_sell_11",OBJPROP_STYLE,2);
-        ObjectSetInteger(0,"step_sell_11",OBJPROP_BACK,true);
-
-        if(ObjectFind(0,"MinPrice")==-1)
-        ObjectCreate(0,"MinPrice",OBJ_TEXT,0,TimeCurrent(),step_sell_11);
-        ObjectSetDouble(0,"MinPrice",OBJPROP_PRICE,step_sell_11);
-        ObjectSetInteger(0,"MinPrice",OBJPROP_TIME,TimeCurrent());
-        ObjectSetInteger(0,"MinPrice",OBJPROP_BACK,true);
-        ObjectSetText("MinPrice",DoubleToStr(NormalizeDouble(step_sell_11,5),5),10,TextFONT,col_1);}}
+        EnsureHLine("step_sell_11",step_sell_11,col_1,1,2,true);
+        EnsureText("MinPrice",TimeCurrent(),step_sell_11,DoubleToStr(NormalizeDouble(step_sell_11,5),5),10,TextFONT,col_1,true);}}
 //-----------------------расчитываем step11----------------------------------------------------
 
 //-----------------------получаем время открытия последнего ордера-----------------------------
@@ -999,80 +988,13 @@
        count_close = 0;}       
 //-----------------------удаляем объекты, очищаем переменные-----------------------------------
 
-//-----------------------расчитываем step ы----------------------------------------------------       
-       if(CountBuy_1()>=1&&CountBuy_1()<5){ 
-       if(FileIsExist(filename1,0)>=1){next_step_buy=6;next_step_buy_11=0.0006;}
-       if(FileIsExist(filename2,0)>=1){next_step_buy=5;next_step_buy_11=0.0005;}
-       if(FileIsExist(filename3,0)>=1){next_step_buy=4;next_step_buy_11=0.0004;}
-       if(FileIsExist(filename4,0)>=1){next_step_buy=3;next_step_buy_11=0.0003;}
-       if(FileIsExist(filename5,0)>=1){next_step_buy=2;next_step_buy_11=0.0002;}}
-       if(CountBuy_1()>=5&&CountBuy_1()<10){ 
-       if(FileIsExist(filename1,0)>=1){next_step_buy=8;next_step_buy_11=0.0008;}
-       if(FileIsExist(filename2,0)>=1){next_step_buy=7;next_step_buy_11=0.0007;}
-       if(FileIsExist(filename3,0)>=1){next_step_buy=6;next_step_buy_11=0.0006;}
-       if(FileIsExist(filename4,0)>=1){next_step_buy=5;next_step_buy_11=0.0005;}
-       if(FileIsExist(filename5,0)>=1){next_step_buy=4;next_step_buy_11=0.0004;}}
-       if(CountBuy_1()>=10&&CountBuy_1()<15){ 
-       if(FileIsExist(filename1,0)>=1){next_step_buy=16;next_step_buy_11=0.0016;}
-       if(FileIsExist(filename2,0)>=1){next_step_buy=14;next_step_buy_11=0.0014;}
-       if(FileIsExist(filename3,0)>=1){next_step_buy=12;next_step_buy_11=0.0012;}
-       if(FileIsExist(filename4,0)>=1){next_step_buy=10;next_step_buy_11=0.0010;}
-       if(FileIsExist(filename5,0)>=1){next_step_buy=8;next_step_buy_11=0.0008;}}
-       if(CountBuy_1()>=15&&CountBuy_1()<20){ 
-       if(FileIsExist(filename1,0)>=1){next_step_buy=30;next_step_buy_11=0.0030;}
-       if(FileIsExist(filename2,0)>=1){next_step_buy=28;next_step_buy_11=0.0028;}
-       if(FileIsExist(filename3,0)>=1){next_step_buy=26;next_step_buy_11=0.0026;}
-       if(FileIsExist(filename4,0)>=1){next_step_buy=24;next_step_buy_11=0.0024;}
-       if(FileIsExist(filename5,0)>=1){next_step_buy=22;next_step_buy_11=0.0022;}}
-       if(CountBuy_1()>=20&&CountBuy_1()<40){ 
-       if(FileIsExist(filename1,0)>=1){next_step_buy=40;next_step_buy_11=0.0040;}
-       if(FileIsExist(filename2,0)>=1){next_step_buy=38;next_step_buy_11=0.0038;}
-       if(FileIsExist(filename3,0)>=1){next_step_buy=36;next_step_buy_11=0.0036;}
-       if(FileIsExist(filename4,0)>=1){next_step_buy=34;next_step_buy_11=0.0034;}
-       if(FileIsExist(filename5,0)>=1){next_step_buy=32;next_step_buy_11=0.0032;}}
-       if(CountBuy_1()>=40){ 
-       if(FileIsExist(filename1,0)>=1){next_step_buy=60;next_step_buy_11=0.0060;}
-       if(FileIsExist(filename2,0)>=1){next_step_buy=58;next_step_buy_11=0.0058;}
-       if(FileIsExist(filename3,0)>=1){next_step_buy=56;next_step_buy_11=0.0056;}
-       if(FileIsExist(filename4,0)>=1){next_step_buy=54;next_step_buy_11=0.0054;}
-       if(FileIsExist(filename5,0)>=1){next_step_buy=52;next_step_buy_11=0.0052;}}
-    
-       if(CountSell_1()>=1&&CountSell_1()<5){ 
-       if(FileIsExist(filename1,0)>=1){next_step_sell=6;next_step_sell_11=0.0006;}
-       if(FileIsExist(filename2,0)>=1){next_step_sell=5;next_step_sell_11=0.0005;}
-       if(FileIsExist(filename3,0)>=1){next_step_sell=4;next_step_sell_11=0.0004;}
-       if(FileIsExist(filename4,0)>=1){next_step_sell=3;next_step_sell_11=0.0003;}
-       if(FileIsExist(filename5,0)>=1){next_step_sell=2;next_step_sell_11=0.0002;}}
-       if(CountSell_1()>=5&&CountSell_1()<10){ 
-       if(FileIsExist(filename1,0)>=1){next_step_sell=8;next_step_sell_11=0.0008;}
-       if(FileIsExist(filename2,0)>=1){next_step_sell=7;next_step_sell_11=0.0007;}
-       if(FileIsExist(filename3,0)>=1){next_step_sell=6;next_step_sell_11=0.0006;}
-       if(FileIsExist(filename4,0)>=1){next_step_sell=5;next_step_sell_11=0.0005;}
-       if(FileIsExist(filename5,0)>=1){next_step_sell=4;next_step_sell_11=0.0004;}}
-       if(CountSell_1()>=10&&CountSell_1()<15){ 
-       if(FileIsExist(filename1,0)>=1){next_step_sell=16;next_step_sell_11=0.0016;}
-       if(FileIsExist(filename2,0)>=1){next_step_sell=14;next_step_sell_11=0.0014;}
-       if(FileIsExist(filename3,0)>=1){next_step_sell=12;next_step_sell_11=0.0012;}
-       if(FileIsExist(filename4,0)>=1){next_step_sell=10;next_step_sell_11=0.0010;}
-       if(FileIsExist(filename5,0)>=1){next_step_sell=08;next_step_sell_11=0.0008;}}
-       if(CountSell_1()>=15&&CountSell_1()<20){ 
-       if(FileIsExist(filename1,0)>=1){next_step_sell=30;next_step_sell_11=0.0030;}
-       if(FileIsExist(filename2,0)>=1){next_step_sell=28;next_step_sell_11=0.0028;}
-       if(FileIsExist(filename3,0)>=1){next_step_sell=26;next_step_sell_11=0.0026;}
-       if(FileIsExist(filename4,0)>=1){next_step_sell=24;next_step_sell_11=0.0024;}
-       if(FileIsExist(filename5,0)>=1){next_step_sell=22;next_step_sell_11=0.0022;}}
-       if(CountSell_1()>=20&&CountSell_1()<40){ 
-       if(FileIsExist(filename1,0)>=1){next_step_sell=40;next_step_sell_11=0.0040;}
-       if(FileIsExist(filename2,0)>=1){next_step_sell=38;next_step_sell_11=0.0038;}
-       if(FileIsExist(filename3,0)>=1){next_step_sell=36;next_step_sell_11=0.0036;}
-       if(FileIsExist(filename4,0)>=1){next_step_sell=34;next_step_sell_11=0.0034;}
-       if(FileIsExist(filename5,0)>=1){next_step_sell=32;next_step_sell_11=0.0032;}}
-       if(CountSell_1()>=40){ 
-       if(FileIsExist(filename1,0)>=1){next_step_sell=60;next_step_sell_11=0.0060;}
-       if(FileIsExist(filename2,0)>=1){next_step_sell=58;next_step_sell_11=0.0058;}
-       if(FileIsExist(filename3,0)>=1){next_step_sell=56;next_step_sell_11=0.0056;}
-       if(FileIsExist(filename4,0)>=1){next_step_sell=54;next_step_sell_11=0.0054;}
-       if(FileIsExist(filename5,0)>=1){next_step_sell=52;next_step_sell_11=0.0052;}}       
+//-----------------------расчитываем step ы----------------------------------------------------
+       // Use unified step computation from steps_unified.mqh (refreshed in OnTimer)
+       // Retrieve cached values computed in OnTimer
+       next_step_buy = g_next_step_buy;
+       next_step_buy_11 = g_next_step_buy_px;
+       next_step_sell = g_next_step_sell;
+       next_step_sell_11 = g_next_step_sell_px;
 //-----------------------расчитываем step ы----------------------------------------------------
       
 //-----------------------считаем среднюю дельту за n дней/месяцев------------------------------
@@ -1096,12 +1018,28 @@
        if (i_D1 == 3) delta_AUDCHF_GBPCHF_d = avgDiffs_D1[i_D1];
        if (i_D1 == 4) delta_NZDUSD_NZDCAD_d = avgDiffs_D1[i_D1];
        if (i_D1 == 5) delta_USDCHF_CADCHF_d = avgDiffs_D1[i_D1];}
-       // Анализируем валютные пары для месяцев (MN1)
+       // Анализируем валютные пары для месяцев (MN1 or D1 based on config)
        for(int i_MN1 = 0; i_MN1 < PAIRS_COUNT; i_MN1++) {
        string symbol1 = pairs_MN1[i_MN1][0];
        string symbol2 = pairs_MN1[i_MN1][1];
-       // Вызываем функцию анализа для месяца (MN1)
-       AnalyzePair_MN1(symbol1, symbol2, i_MN1, currentMonth);
+       // Use D1(20) by default or MN1 if configured
+       if(UseD1Analytics){
+         // Use D1 analytics with configurable period instead of MN1
+         double totalDiff_D1Alt=0;
+         int count_D1Alt=0;
+         for(int j=1;j<=D1AnalyticsPeriod;j++){
+           double change1=CalculatePercentageChange_D1(symbol1,j);
+           double change2=CalculatePercentageChange_D1(symbol2,j);
+           if(change1==0||change2==0)continue;
+           double diff=MathAbs(change1-change2);
+           totalDiff_D1Alt+=diff;
+           count_D1Alt++;
+         }
+         if(count_D1Alt>0) avgDiffs_MN1[i_MN1]=totalDiff_D1Alt/count_D1Alt;
+       }else{
+         // Original MN1 analytics
+         AnalyzePair_MN1(symbol1, symbol2, i_MN1, currentMonth);
+       }
        // Если в процессе анализа получается ноль, подставляем значение из другого буфера
        if(avgDiffs_MN1[i_MN1] == 0) {
        avgDiffs_MN1[i_MN1] = GetSafeValue(avgDiffs_MN1[i_MN1],2); // Пример подстановки значения
@@ -4477,54 +4415,84 @@ if(tral_equity_dinamic) {
 //-----------------------конец слудующий вход buy----------------------------------------------    
         if(op==11){int t_b=main.getLastOrderTicket(OP_BUY,ORDER_LAST);
         if(main.OrderSelect(t_b)){
-        if(Ask>step_buy_11){lot=getLot((main.orders[OP_BUY]));main.OrderSend(OP_BUY,lot*st1*par5,-1,0,0,(string)order_magic);     
+        if(Ask>step_buy_11 && (TimeCurrent()-g_lastStepEntryBuy)>=StepReentryCooldownSec){
+        lot=getLot((main.orders[OP_BUY]));
+        main.OrderSend(OP_BUY,lot*st1*par5,-1,0,0,(string)order_magic);
+        g_lastStepEntryBuy=TimeCurrent();
         if(telegram==true){SendTelegramMessage(BuildEquityMessage_buy());} }}}
 //---------------------------------------------------------------------------------------------   
         if(op==22){int t_b=main.getLastOrderTicket(OP_BUY,ORDER_LAST);
         if(main.OrderSelect(t_b)){ 
-        if(Ask>step_buy_11){lot=getLot((main.orders[OP_BUY]));main.OrderSend(OP_BUY,lot*st2*par5,-1,0,0,(string)order_magic);
+        if(Ask>step_buy_11 && (TimeCurrent()-g_lastStepEntryBuy)>=StepReentryCooldownSec){
+        lot=getLot((main.orders[OP_BUY]));
+        main.OrderSend(OP_BUY,lot*st2*par5,-1,0,0,(string)order_magic);
+        g_lastStepEntryBuy=TimeCurrent();
         if(telegram==true){SendTelegramMessage(BuildEquityMessage_buy());} }}}
 //---------------------------------------------------------------------------------------------   
         if(op==33){int t_b=main.getLastOrderTicket(OP_BUY,ORDER_LAST);
         if(main.OrderSelect(t_b)){ 
-        if(Ask>step_buy_11){lot=getLot((main.orders[OP_BUY]));main.OrderSend(OP_BUY,lot*st3*par5,-1,0,0,(string)order_magic);
+        if(Ask>step_buy_11 && (TimeCurrent()-g_lastStepEntryBuy)>=StepReentryCooldownSec){
+        lot=getLot((main.orders[OP_BUY]));
+        main.OrderSend(OP_BUY,lot*st3*par5,-1,0,0,(string)order_magic);
+        g_lastStepEntryBuy=TimeCurrent();
         if(telegram==true){SendTelegramMessage(BuildEquityMessage_buy());} }}}
 //---------------------------------------------------------------------------------------------   
         if(op==44){int t_b=main.getLastOrderTicket(OP_BUY,ORDER_LAST);
         if(main.OrderSelect(t_b)){
-        if(Ask>step_buy_11){lot=getLot((main.orders[OP_BUY]));main.OrderSend(OP_BUY,lot*st4*par5,-1,0,0,(string)order_magic);
+        if(Ask>step_buy_11 && (TimeCurrent()-g_lastStepEntryBuy)>=StepReentryCooldownSec){
+        lot=getLot((main.orders[OP_BUY]));
+        main.OrderSend(OP_BUY,lot*st4*par5,-1,0,0,(string)order_magic);
+        g_lastStepEntryBuy=TimeCurrent();
         if(telegram==true){SendTelegramMessage(BuildEquityMessage_buy());} }}}
 //---------------------------------------------------------------------------------------------   
         if(op==55){int t_b=main.getLastOrderTicket(OP_BUY,ORDER_LAST);
         if(main.OrderSelect(t_b)){
-        if(Ask>step_buy_11){lot=getLot((main.orders[OP_BUY]));main.OrderSend(OP_BUY,lot*st5*par5,-1,0,0,(string)order_magic);
+        if(Ask>step_buy_11 && (TimeCurrent()-g_lastStepEntryBuy)>=StepReentryCooldownSec){
+        lot=getLot((main.orders[OP_BUY]));
+        main.OrderSend(OP_BUY,lot*st5*par5,-1,0,0,(string)order_magic);
+        g_lastStepEntryBuy=TimeCurrent();
         if(telegram==true){SendTelegramMessage(BuildEquityMessage_buy());} }}}
 //-----------------------конец слудующий вход buy----------------------------------------------
 
 //-----------------------следующие входы sell--------------------------------------------------           
         if(op==-11){int t_s=main.getLastOrderTicket(OP_SELL,ORDER_LAST);
         if(main.OrderSelect(t_s)){
-        if(Bid<step_sell_11){lot=getLot((main.orders[OP_SELL]));main.OrderSend(OP_SELL,lot*st1*par5,-1,0,0,(string)order_magic);
+        if(Bid<step_sell_11 && (TimeCurrent()-g_lastStepEntrySell)>=StepReentryCooldownSec){
+        lot=getLot((main.orders[OP_SELL]));
+        main.OrderSend(OP_SELL,lot*st1*par5,-1,0,0,(string)order_magic);
+        g_lastStepEntrySell=TimeCurrent();
         if(telegram==true){SendTelegramMessage(BuildEquityMessage_sell());} }}}
 //---------------------------------------------------------------------------------------------         
         if(op==-22){int t_s=main.getLastOrderTicket(OP_SELL,ORDER_LAST);
         if(main.OrderSelect(t_s)){
-        if(Bid<step_sell_11){lot=getLot((main.orders[OP_SELL])); main.OrderSend(OP_SELL,lot*st2*par5,-1,0,0,(string)order_magic);
+        if(Bid<step_sell_11 && (TimeCurrent()-g_lastStepEntrySell)>=StepReentryCooldownSec){
+        lot=getLot((main.orders[OP_SELL]));
+        main.OrderSend(OP_SELL,lot*st2*par5,-1,0,0,(string)order_magic);
+        g_lastStepEntrySell=TimeCurrent();
         if(telegram==true){SendTelegramMessage(BuildEquityMessage_sell());} }}}
 //---------------------------------------------------------------------------------------------          
         if(op==-33){int t_s=main.getLastOrderTicket(OP_SELL,ORDER_LAST);
         if(main.OrderSelect(t_s)){
-        if(Bid<step_sell_11){lot=getLot((main.orders[OP_SELL]));main.OrderSend(OP_SELL,lot*st3*par5,-1,0,0,(string)order_magic);
+        if(Bid<step_sell_11 && (TimeCurrent()-g_lastStepEntrySell)>=StepReentryCooldownSec){
+        lot=getLot((main.orders[OP_SELL]));
+        main.OrderSend(OP_SELL,lot*st3*par5,-1,0,0,(string)order_magic);
+        g_lastStepEntrySell=TimeCurrent();
         if(telegram==true){SendTelegramMessage(BuildEquityMessage_sell());} }}}
 //---------------------------------------------------------------------------------------------          
         if(op==-44){int t_s=main.getLastOrderTicket(OP_SELL,ORDER_LAST);
         if(main.OrderSelect(t_s)){
-        if(Bid<step_sell_11){lot=getLot((main.orders[OP_SELL]));main.OrderSend(OP_SELL,lot*st4*par5,-1,0,0,(string)order_magic);
+        if(Bid<step_sell_11 && (TimeCurrent()-g_lastStepEntrySell)>=StepReentryCooldownSec){
+        lot=getLot((main.orders[OP_SELL]));
+        main.OrderSend(OP_SELL,lot*st4*par5,-1,0,0,(string)order_magic);
+        g_lastStepEntrySell=TimeCurrent();
         if(telegram==true){SendTelegramMessage(BuildEquityMessage_sell());} }}}
 //---------------------------------------------------------------------------------------------          
         if(op==-55){int t_s=main.getLastOrderTicket(OP_SELL,ORDER_LAST);
         if(main.OrderSelect(t_s)){
-        if(Bid<step_sell_11){lot=getLot((main.orders[OP_SELL]));main.OrderSend(OP_SELL,lot*st5*par5,-1,0,0,(string)order_magic);
+        if(Bid<step_sell_11 && (TimeCurrent()-g_lastStepEntrySell)>=StepReentryCooldownSec){
+        lot=getLot((main.orders[OP_SELL]));
+        main.OrderSend(OP_SELL,lot*st5*par5,-1,0,0,(string)order_magic);
+        g_lastStepEntrySell=TimeCurrent();
         if(telegram==true){SendTelegramMessage(BuildEquityMessage_sell());} }}}
 //-----------------------конец следующий вход sell---------------------------------------------
 //-----------------------конец открытие позиций------------------------------------------------
