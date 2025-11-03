@@ -278,7 +278,6 @@ void OnTimer(){
   g_countSellAll = CountSell_1();
   Steps_OnTimer(g_countBuyAll, g_countSellAll);
 }
-}
 
 // =================== INIT / DEINIT =======================
 int OnInit(){

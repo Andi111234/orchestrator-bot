@@ -20,17 +20,17 @@ int g_cached_count_sell = -1;
 
 // Helper: compute pip value considering digits and profit calc mode
 double PipValueLocal(string sym) {
+  int digits = (int)MarketInfo(sym, MODE_DIGITS);
+  int profitMode = (int)MarketInfo(sym, MODE_PROFITCALCMODE);
   int mult = 1;
-  if (MarketInfo(sym, MODE_DIGITS) == 5 || 
-      MarketInfo(sym, MODE_DIGITS) == 3 || 
-      MarketInfo(sym, MODE_PROFITCALCMODE) == 1)
+  if (digits == 5 || digits == 3 || profitMode == 1)
     mult = 10;
   return mult * MarketInfo(sym, MODE_POINT);
 }
 
 // Step lookup tables (6 ranges × 5 PR priority flags)
 // Range: [1..5), [5..10), [10..15), [15..20), [20..40), [40+)
-// PR flags: str1.txt (highest), str2.txt, str3.txt, str4.txt, str5.txt (lowest)
+// PR flags: str_pr1.txt (highest), str_pr2.txt, str_pr3.txt, str_pr4.txt, str_pr5.txt (lowest)
 
 void ComputeSteps(int count, bool isBuy, double &step_pips, double &step_px) {
   // Default fallback
@@ -38,11 +38,11 @@ void ComputeSteps(int count, bool isBuy, double &step_pips, double &step_px) {
   step_px = 0.0002;
   
   // Check PR flag files (priority order: 1 > 2 > 3 > 4 > 5)
-  bool pr1 = FileIsExist("str1.txt", 0) >= 1;
-  bool pr2 = FileIsExist("str2.txt", 0) >= 1;
-  bool pr3 = FileIsExist("str3.txt", 0) >= 1;
-  bool pr4 = FileIsExist("str4.txt", 0) >= 1;
-  bool pr5 = FileIsExist("str5.txt", 0) >= 1;
+  bool pr1 = FileIsExist("str_pr1.txt", 0) >= 1;
+  bool pr2 = FileIsExist("str_pr2.txt", 0) >= 1;
+  bool pr3 = FileIsExist("str_pr3.txt", 0) >= 1;
+  bool pr4 = FileIsExist("str_pr4.txt", 0) >= 1;
+  bool pr5 = FileIsExist("str_pr5.txt", 0) >= 1;
   
   // Step tables for BUY and SELL (same values, keeping separate for clarity)
   // Range 1: [1..5)
