@@ -277,12 +277,7 @@ void OnTimer(){
   g_countBuyAll  = CountBuy_1();
   g_countSellAll = CountSell_1();
   Steps_OnTimer(g_countBuyAll, g_countSellAll);
-  
-  // For backward compatibility with local naming
-  g_next_step_buy = ::g_next_step_buy;
-  g_next_step_sell = ::g_next_step_sell;
-  g_next_step_buy_px = ::g_next_step_buy_px;
-  g_next_step_sell_px = ::g_next_step_sell_px;
+}
 }
 
 // =================== INIT / DEINIT =======================

@@ -500,12 +500,6 @@ void OnTimer(){
 
   // Call unified step computation (updates g_next_step_buy/sell and g_next_step_buy_px/sell_px)
   Steps_OnTimer(g_countBuyAll, g_countSellAll);
-  
-  // For backward compatibility with local naming
-  g_next_step_buy = ::g_next_step_buy;
-  g_next_step_sell = ::g_next_step_sell;
-  g_next_step_buy_px = ::g_next_step_buy_px;
-  g_next_step_sell_px = ::g_next_step_sell_px;
 
   g_cache_updated_at = TimeCurrent();
 }
