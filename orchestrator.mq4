@@ -1,5 +1,5 @@
 
-        #include "sovetnikov.mqh" 
+        #include "sovetnikov_light.mqh" 
 //-----------------------проверяем ботов активен или нет--------------------------------------- 
         #define BOT_NAME "Bot_1"  // Уникальное имя этого советника 
         #define TOTAL_BOTS 12          // Всего ботов
